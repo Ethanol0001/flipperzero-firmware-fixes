@@ -1,12 +1,12 @@
 from dataclasses import dataclass, field
+from fbt.appmanifest import FlipperAppType
 
 from SCons.Node import NodeList
 from SCons.Warnings import warn, WarningOnByDefault
-from SCons.Errors import UserError
+
 
 Import("ENV")
 
-from fbt.appmanifest import FlipperAppType
 
 appenv = ENV["APPENV"] = ENV.Clone(
     tools=[
@@ -23,18 +23,14 @@ appenv.Replace(
 
 appenv.AppendUnique(
     CCFLAGS=[
-        "-ggdb3",
         "-mword-relocations",
         "-mlong-calls",
         "-fno-common",
         "-nostdlib",
-        "-fvisibility=hidden",
     ],
     LINKFLAGS=[
         "-Ur",
         "-Wl,-Ur",
-        # "-Wl,--orphan-handling=error",
-        "-Bsymbolic",
         "-nostartfiles",
         "-mlong-calls",
         "-fno-common",
@@ -64,39 +60,12 @@ class FlipperExtAppBuildArtifacts:
     sdk_tree: NodeList = field(default_factory=NodeList)
 
 
-apps_to_build_as_faps = [
-    FlipperAppType.PLUGIN,
-    FlipperAppType.EXTERNAL,
-    FlipperAppType.DEBUG,
-]
-
-known_extapps = [
-    app
-    for apptype in apps_to_build_as_faps
-    for app in appenv["APPBUILD"].get_apps_of_type(apptype, True)
-]
-
-# Ugly access to global option
-if extra_app_list := GetOption("extra_ext_apps"):
-    known_extapps.extend(map(appenv["APPMGR"].get, extra_app_list.split(",")))
-
-incompatible_apps = []
-for app in known_extapps:
-    if not app.supports_hardware_target(appenv.subst("f${TARGET_HW}")):
-        incompatible_apps.append(app)
-        continue
-
+for app in appenv["APPBUILD"].get_ext_apps():
     appenv.BuildAppElf(app)
 
 extapps = FlipperExtAppBuildArtifacts()
 extapps.application_map = appenv["EXT_APPS"]
 
-if incompatible_apps:
-    warn(
-        WarningOnByDefault,
-        f"Skipping build of {len(incompatible_apps)} incompatible app(s): "
-        + ", ".join(f"'{app.name}' (id '{app.appid}')" for app in incompatible_apps),
-    )
 
 if appenv["FORCE"]:
     appenv.AlwaysBuild(
@@ -113,8 +82,20 @@ extapps.resources_dist = appenv.FapDist(appenv["RESOURCES_ROOT"], [])
 
 
 if appsrc := appenv.subst("$APPSRC"):
-    appenv.AddAppLaunchTarget(appsrc, "launch_app")
+    launch_target = appenv.AddAppLaunchTarget(appsrc, "launch")
+    Alias("launch_app", launch_target)
+    appenv.PhonyTarget(
+        "launch_app",
+        Action(
+            lambda **kw: warn(
+                WarningOnByDefault,
+                "The 'launch_app' target is deprecated. Use 'launch' instead.",
+            ),
+            None,
+        ),
+    )
 
+    appenv.AddAppBuildTarget(appsrc, "build")
 
 # SDK management
 

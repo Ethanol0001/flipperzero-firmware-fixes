@@ -43,7 +43,6 @@ static void debug_changed(VariableItem* item) {
     } else {
         furi_hal_rtc_reset_flag(FuriHalRtcFlagDebug);
     }
-    loader_update_menu();
 }
 
 const char* const heap_trace_mode_text[] = {
@@ -137,8 +136,6 @@ static void hand_orient_changed(VariableItem* item) {
     } else {
         furi_hal_rtc_reset_flag(FuriHalRtcFlagHandOrient);
     }
-
-    loader_update_menu();
 }
 
 const char* const sleep_method[] = {
@@ -153,6 +150,21 @@ static void sleep_method_changed(VariableItem* item) {
         furi_hal_rtc_set_flag(FuriHalRtcFlagLegacySleep);
     } else {
         furi_hal_rtc_reset_flag(FuriHalRtcFlagLegacySleep);
+    }
+}
+
+const char* const filename_scheme[] = {
+    "Default",
+    "Detailed",
+};
+
+static void filename_scheme_changed(VariableItem* item) {
+    uint8_t index = variable_item_get_current_value_index(item);
+    variable_item_set_current_value_text(item, filename_scheme[index]);
+    if(index) {
+        furi_hal_rtc_set_flag(FuriHalRtcFlagDetailedFilename);
+    } else {
+        furi_hal_rtc_reset_flag(FuriHalRtcFlagDetailedFilename);
     }
 }
 
@@ -238,6 +250,12 @@ SystemSettings* system_settings_alloc() {
     value_index = furi_hal_rtc_is_flag_set(FuriHalRtcFlagLegacySleep) ? 1 : 0;
     variable_item_set_current_value_index(item, value_index);
     variable_item_set_current_value_text(item, sleep_method[value_index]);
+
+    item = variable_item_list_add(
+        app->var_item_list, "File Naming", COUNT_OF(filename_scheme), filename_scheme_changed, app);
+    value_index = furi_hal_rtc_is_flag_set(FuriHalRtcFlagDetailedFilename) ? 1 : 0;
+    variable_item_set_current_value_index(item, value_index);
+    variable_item_set_current_value_text(item, filename_scheme[value_index]);
 
     view_set_previous_callback(
         variable_item_list_get_view(app->var_item_list), system_settings_exit);

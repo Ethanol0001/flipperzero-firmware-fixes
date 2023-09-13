@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
+import os
+import posixpath
+
 from flipper.app import App
 from flipper.storage import FlipperStorage, FlipperStorageOperations
 from flipper.utils.cdc import resolve_port
-
-import os
-import posixpath
 
 
 class Main(App):
@@ -52,9 +52,7 @@ class Main(App):
                 if not self.args.launch_app:
                     return 0
 
-                storage.send_and_wait_eol(
-                    f'loader open "Applications" {fap_dst_path}\r'
-                )
+                storage.send_and_wait_eol(f"loader open {fap_dst_path}\r")
 
                 if len(result := storage.read.until(storage.CLI_EOL)):
                     self.logger.error(f"Unexpected response: {result.decode('ascii')}")

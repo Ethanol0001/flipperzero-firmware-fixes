@@ -53,7 +53,8 @@ static void draw_battery(Canvas* canvas, BatteryInfoModel* data, int x, int y) {
             (uint32_t)(data->vbus_voltage),
             (uint32_t)(data->vbus_voltage * 10) % 10,
             current);
-    } else if(current < 0) {
+    } else if(current < -5) {
+        // 0-5ma deadband
         snprintf(
             emote,
             sizeof(emote),

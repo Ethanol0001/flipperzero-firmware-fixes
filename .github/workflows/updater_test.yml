@@ -13,13 +13,13 @@ jobs:
     runs-on: [self-hosted, FlipperZeroUpdaterTest]
     steps:
       - name: 'Wipe workspace'
-        run: find ./ -mount -maxdepth 1 -exec rm -rf {} \; 
+        run: find ./ -mount -maxdepth 1 -exec rm -rf {} \;
 
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           fetch-depth: 1
-          submodules: false          
+          submodules: false
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: 'Get flipper from device manager (mock)'
@@ -30,6 +30,7 @@ jobs:
 
       - name: 'Flashing target firmware'
         id: first_full_flash
+        timeout-minutes: 10
         run: |
           source scripts/toolchain/fbtenv.sh
           ./fbt flash_usb_full PORT=${{steps.device.outputs.flipper}} FORCE=1
@@ -37,6 +38,7 @@ jobs:
 
       - name: 'Validating updater'
         id: second_full_flash
+        timeout-minutes: 10
         if: success()
         run: |
           source scripts/toolchain/fbtenv.sh
@@ -50,7 +52,7 @@ jobs:
           echo "tag=$(git tag -l --sort=-version:refname | grep -v "rc\|RC" | head -1)" >> $GITHUB_OUTPUT
 
       - name: 'Wipe workspace'
-        run: find ./ -mount -maxdepth 1 -exec rm -rf {} \; 
+        run: find ./ -mount -maxdepth 1 -exec rm -rf {} \;
 
       - name: 'Checkout latest release'
         uses: actions/checkout@v3
@@ -62,7 +64,7 @@ jobs:
       - name: 'Flash last release'
         if: failure()
         run: |
-          ./fbt flash OPENOCD_ADAPTER_SERIAL=${{steps.device.outputs.stlink}} FORCE=1
+          ./fbt flash SWD_TRANSPORT_SERIAL=${{steps.device.outputs.stlink}} FORCE=1
 
       - name: 'Wait for flipper and format ext'
         if: failure()

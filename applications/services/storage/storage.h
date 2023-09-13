@@ -226,7 +226,7 @@ FS_Error storage_common_stat(Storage* storage, const char* path, FileInfo* filei
  */
 FS_Error storage_common_remove(Storage* storage, const char* path);
 
-/** Renames file/directory, file/directory must not be open
+/** Renames file/directory, file/directory must not be open. Will overwrite existing file.
  * @param app pointer to the api
  * @param old_path old path
  * @param new_path new path
@@ -334,11 +334,19 @@ const char* storage_file_get_error_desc(File* file);
  */
 FS_Error storage_sd_format(Storage* api);
 
-/** Will unmount the SD card
+/** Will unmount the SD card.
+ * Will return FSE_NOT_READY if the SD card is not mounted.
+ * Will return FSE_DENIED if there are open files on the SD card.
  * @param api pointer to the api
  * @return FS_Error operation result
  */
 FS_Error storage_sd_unmount(Storage* api);
+
+/** Will mount the SD card
+ * @param api pointer to the api
+ * @return FS_Error operation result
+ */
+FS_Error storage_sd_mount(Storage* api);
 
 /** Retrieves SD card information
  * @param api pointer to the api
